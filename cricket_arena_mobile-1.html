@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#102d24">
+<title>Cricket Arena — Mobile Prototype</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#102d24;color:#fff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;display:flex;justify-content:center;min-height:100vh}.app{width:min(100%,720px);display:flex;flex-direction:column;gap:10px;padding:12px}.top{display:flex;align-items:center;justify-content:space-between;gap:8px}.brand{font-weight:900;letter-spacing:.5px}.tag{font-size:11px;color:#c8e6d2;background:#214a39;padding:5px 8px;border-radius:999px}.scoreboard{display:flex;gap:8px}.stat{flex:1;background:#1b3c30;border:1px solid #37634e;border-radius:12px;padding:8px 10px;text-align:center}.stat small{display:block;color:#b8d6c2;font-size:11px}.stat strong{font-size:20px}.stage{position:relative;border-radius:16px;overflow:hidden;border:1px solid #47765d;background:#6baf61;box-shadow:0 10px 30px #061a12aa}.stage canvas{display:block;width:100%;height:auto;touch-action:manipulation}.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#071c16b8;padding:24px;text-align:center}.panel{max-width:360px}.panel h1{font-size:27px;margin:0 0 8px}.panel p{color:#d6e9dd;line-height:1.45;margin:8px 0 16px}.btn{border:0;border-radius:12px;padding:13px 16px;font-weight:800;font-size:15px;color:#092017;background:#f2d35d;cursor:pointer;touch-action:manipulation}.btn:active{transform:scale(.98)}.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}.controls .btn{min-height:58px}.secondary{background:#d5eee0}.hint{text-align:center;color:#c4decf;font-size:12px;margin:0}.message{min-height:24px;text-align:center;font-weight:700;color:#f5e79a}.footer{font-size:11px;text-align:center;color:#8fb6a0}@media(min-width:600px){.app{padding:18px}.stage canvas{max-height:65vh;object-fit:contain;background:#6baf61}}
+</style></head>
+<body><main class="app">
+<div class="top"><div><div class="brand">🏏 CRICKET ARENA</div><div style="font-size:12px;color:#b8d6c2">3D-style mobile batting prototype</div></div><span class="tag">OFFLINE DEMO</span></div>
+<div class="scoreboard"><div class="stat"><small>RUNS</small><strong id="runs">0</strong></div><div class="stat"><small>WICKETS</small><strong id="wickets">0</strong></div><div class="stat"><small>BALLS</small><strong id="balls">0/12</strong></div><div class="stat"><small>LAST SHOT</small><strong id="last">—</strong></div></div>
+<div class="stage"><canvas id="game" width="720" height="900" aria-label="Cricket game field"></canvas><div class="overlay" id="intro"><div class="panel"><h1>Ready to bat?</h1><p>Play a quick 2-over challenge. Tap <b>BOWL</b> to send the ball, then tap <b>SHOT</b> when it reaches the batter. Timing matters!</p><button class="btn" id="start">START MATCH</button></div></div><div class="overlay" id="end" style="display:none"><div class="panel"><h1>Innings complete!</h1><p id="summary">Final score</p><button class="btn" id="again">PLAY AGAIN</button></div></div></div>
+<div class="message" id="message">Tap Start Match to begin.</div><div class="controls"><button class="btn secondary" id="bowl">🎯 BOWL</button><button class="btn" id="shot">🏏 SHOT</button></div><p class="hint">Tip: Tap SHOT as the ball approaches the batter. Better timing earns more runs.</p><div class="footer">Prototype build 0.1 · Original demo, not affiliated with Real Cricket or KRAFTON</div>
+</main>
+<script>
+(()=>{
+const c=document.getElementById('game'),ctx=c.getContext('2d');const $=id=>document.getElementById(id);let started=false,over=false,ball=null,runs=0,wickets=0,balls=0,last='—',msg='Tap Start Match to begin.',batSwing=0,flash=0,fielders=[];
+function resizeDraw(){draw()}
+function reset(){started=true;over=false;ball=null;runs=0;wickets=0;balls=0;last='—';batSwing=0;flash=0;msg='You are batting. Tap BOWL.';$('intro').style.display='none';$('end').style.display='none';update();draw()}
+function update(){ $('runs').textContent=runs;$('wickets').textContent=wickets;$('balls').textContent=balls+'/12';$('last').textContent=last;$('message').textContent=msg; }
+function bowl(){if(!started||over)return;if(ball&&ball.active){msg='Ball is still in play!';update();return}if(balls>=12){finish();return}ball={t:0,active:true,hit:false,x:360,y:220};msg='Watch the ball…';update();}
+function shot(){if(!started||over)return;batSwing=1;if(!ball||!ball.active){msg='No ball to hit — tap BOWL first.';update();return}const timing=ball.t; if(timing>.63&&timing<.9){ball.hit=true;ball.active=false;const quality=1-Math.abs(timing-.77)/.14;let scored=quality>.78?6:quality>.52?4:quality>.27?2:1;runs+=scored;last=scored+' runs';msg=quality>.78?'PERFECT TIMING! SIX!':quality>.52?'Beautiful shot! FOUR!':`Good contact — ${scored} run${scored>1?'s':''}.`;flash=18;}else{ball.active=false;wickets++;last='OUT';msg=timing<=.63?'Too early — bowled!':'Too late — caught behind!';}balls++;if(balls>=12){setTimeout(finish,650)}update();draw()}
+function finish(){over=true;ball=null;$('end').style.display='flex';$('summary').textContent=`You scored ${runs}/${wickets} in ${balls} balls.`;msg='Innings complete. Play again to beat your score!';update();draw()}
+function draw(){const W=c.width,H=c.height;ctx.clearRect(0,0,W,H);
+// sky and stadium
+let sky=ctx.createLinearGradient(0,0,0,H*.4);sky.addColorStop(0,'#7cc9e9');sky.addColorStop(1,'#d5efcf');ctx.fillStyle=sky;ctx.fillRect(0,0,W,H*.38);
+ctx.fillStyle='#496b62';ctx.beginPath();ctx.moveTo(0,210);ctx.lineTo(720,210);ctx.lineTo(720,360);ctx.lineTo(0,360);ctx.fill();
+// crowd dots
+for(let y=230;y<350;y+=16){for(let x=(y%32?8:0);x<720;x+=17){ctx.fillStyle=['#f2d35d','#e9f1e9','#d77e69','#76b7a1','#263e3a'][((x*3+y*7)%5)];ctx.beginPath();ctx.arc(x,y,3.2,0,Math.PI*2);ctx.fill()}}
+// grass ellipse
+ctx.fillStyle='#3b914f';ctx.beginPath();ctx.ellipse(360,570,350,360,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#8ac66a';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(360,570,300,310,0,0,Math.PI*2);ctx.stroke();
+// pitch perspective
+ctx.fillStyle='#c9b38a';ctx.beginPath();ctx.moveTo(278,270);ctx.lineTo(442,270);ctx.lineTo(505,850);ctx.lineTo(215,850);ctx.closePath();ctx.fill();ctx.fillStyle='#d8c49b';ctx.beginPath();ctx.moveTo(298,280);ctx.lineTo(422,280);ctx.lineTo(472,850);ctx.lineTo(248,850);ctx.closePath();ctx.fill();
+// pitch lines
+ctx.strokeStyle='#fff6dc';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(287,330);ctx.lineTo(433,330);ctx.moveTo(230,790);ctx.lineTo(490,790);ctx.stroke();
+// far stumps
+stumps(360,323,.6); // bowler
+// bowler
+person(360,290,.55,'#e8f0f3','#254f8a',false);
+// batter at foreground
+person(390,735,1.08,'#f2f2e8','#237a54',true);
+// bat
+ctx.save();ctx.translate(408,710);ctx.rotate(-.42-batSwing*.75);ctx.fillStyle='#70482c';ctx.fillRect(-7,-88,14,100);ctx.fillStyle='#dfbd7b';ctx.fillRect(-10,-82,20,65);ctx.restore();
+// ball
+if(ball&&ball.active){ball.t+=.0095;const t=Math.min(ball.t,1);const y=335+t*410;const x=360+Math.sin(t*4)*13;const r=5+t*13;ctx.fillStyle='#a71929';ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff0db';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,r*.7,-.8,.8);ctx.stroke();ball.x=x;ball.y=y;if(ball.t>=1){ball.active=false;balls++;wickets++;last='OUT';msg='You missed it! Wicket. Tap BOWL for the next ball.';if(balls>=12)setTimeout(finish,300);update()}}
+if(flash>0){ctx.fillStyle=`rgba(255,240,120,${flash/80})`;ctx.fillRect(0,0,W,H);flash--}if(batSwing>0)batSwing=Math.max(0,batSwing-.07);
+// labels
+ctx.fillStyle='#fff';ctx.font='bold 20px system-ui';ctx.textAlign='center';ctx.shadowColor='#173a26';ctx.shadowBlur=5;ctx.fillText('CRICKET ARENA',360,52);ctx.shadowBlur=0;
+}
+function stumps(x,y,s){ctx.fillStyle='#f6e6b7';for(let i=-1;i<=1;i++)ctx.fillRect(x+i*10*s-2*s,y,4*s,37*s);ctx.fillRect(x-16*s,y-2*s,32*s,4*s)}
+function person(x,y,s,shirt,trousers,batter){ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.fillStyle='#172b24';ctx.beginPath();ctx.ellipse(0,5,24,9,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=trousers;ctx.fillRect(-14,-48,12,48);ctx.fillRect(3,-48,12,48);ctx.fillStyle=shirt;ctx.beginPath();ctx.moveTo(-19,-103);ctx.lineTo(17,-103);ctx.lineTo(23,-58);ctx.lineTo(-22,-58);ctx.closePath();ctx.fill();ctx.fillStyle='#e7b58d';ctx.beginPath();ctx.arc(0,-119,14,0,Math.PI*2);ctx.fill();ctx.fillStyle='#f4f0d8';ctx.beginPath();ctx.arc(0,-123,15,Math.PI,Math.PI*2);ctx.fill();if(batter){ctx.strokeStyle='#e7b58d';ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(-13,-91);ctx.lineTo(-29,-66);ctx.moveTo(15,-91);ctx.lineTo(28,-77);ctx.stroke()}ctx.restore()}
+$('start').addEventListener('click',reset);$('again').addEventListener('click',reset);$('bowl').addEventListener('click',bowl);$('shot').addEventListener('click',shot);c.addEventListener('click',()=>{if(started&&!over)shot()});setInterval(draw,30);update();draw();
+})();
+</script></body></html>
